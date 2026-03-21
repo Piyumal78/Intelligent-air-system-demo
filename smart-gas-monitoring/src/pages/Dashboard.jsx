@@ -20,8 +20,10 @@ const Dashboard = ({ forceDeviceId }) => {
   const { currentUser } = useAuth()
   const [currentReading, setCurrentReading] = useState(null)
   const [currentPostReading, setCurrentPostReading] = useState(null)
+  const [timeFilter, setTimeFilter] = useState("1h")
+  const [localDeviceId, setLocalDeviceId] = useState("")
 
-  const targetId = forceDeviceId || currentUser?.deviceId
+  const targetId = forceDeviceId || localDeviceId || currentUser?.deviceId
   const realDevice = devices.find((d) => d.id === targetId)
   const myDevice = realDevice || (targetId ? { id: targetId, status: "Unknown" } : devices[0])
 
@@ -135,18 +137,96 @@ const Dashboard = ({ forceDeviceId }) => {
     hum: Number(postDefault.hum).toFixed(0),
   }
 
-  // Pre-process chart data (Last 20 updates)
-  const chartData = sensorReadings
-    ?.filter((r) => r.deviceId === myDevice.id)
-    .slice(0, 20)
+  // Filter and smooth chart data
+  const rawChartData = (sensorReadings || [])
+    .filter((r) => r.deviceId === myDevice.id)
+    .filter((r) => {
+       if (!r.timestamp) return false
+       const diffHours = (new Date() - new Date(r.timestamp)) / (1000 * 60 * 60)
+       if (timeFilter === "1h") return diffHours <= 1
+       if (timeFilter === "24h") return diffHours <= 24
+       if (timeFilter === "7d") return diffHours <= 168
+       if (timeFilter === "1m") return diffHours <= 720
+       if (timeFilter === "3m") return diffHours <= 2160
+       if (timeFilter === "1y") return diffHours <= 8760
+       return true
+    })
     .reverse()
     .map((r) => ({
-      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       co: r.CO || 0,
       lpg: r.LPG || 0,
       h2: r.H2 || 0,
       nh3: r.NH3 || 0,
-    })) || []
+    }))
+
+  // Noise Reduction: Moving Average Smoothing (Window: 5 points)
+  const chartData = rawChartData.map((point, index, arr) => {
+    const window = arr.slice(Math.max(0, index - 4), index + 1)
+    return {
+      ...point,
+      co: Number((window.reduce((acc, val) => acc + val.co, 0) / window.length).toFixed(2)),
+      lpg: Number((window.reduce((acc, val) => acc + val.lpg, 0) / window.length).toFixed(2)),
+      h2: Number((window.reduce((acc, val) => acc + val.h2, 0) / window.length).toFixed(2)),
+      nh3: Number((window.reduce((acc, val) => acc + val.nh3, 0) / window.length).toFixed(2)),
+    }
+  })
+
+  const rawPostChartData = (sensorReadings || [])
+    .filter((r) => r.deviceId === `${myDevice.id}_POST`)
+    .filter((r) => {
+       if (!r.timestamp) return false
+       const diffHours = (new Date() - new Date(r.timestamp)) / (1000 * 60 * 60)
+       if (timeFilter === "1h") return diffHours <= 1
+       if (timeFilter === "24h") return diffHours <= 24
+       if (timeFilter === "7d") return diffHours <= 168
+       if (timeFilter === "1m") return diffHours <= 720
+       if (timeFilter === "3m") return diffHours <= 2160
+       if (timeFilter === "1y") return diffHours <= 8760
+       return true
+    })
+    .reverse()
+    .map((r) => ({
+      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      co: r.CO || 0,
+      lpg: r.LPG || 0,
+      h2: r.H2 || 0,
+      nh3: r.NH3 || 0,
+    }))
+
+  const postChartData = rawPostChartData.map((point, index, arr) => {
+    const window = arr.slice(Math.max(0, index - 4), index + 1)
+    return {
+      ...point,
+      co: Number((window.reduce((acc, val) => acc + val.co, 0) / window.length).toFixed(2)),
+      lpg: Number((window.reduce((acc, val) => acc + val.lpg, 0) / window.length).toFixed(2)),
+      h2: Number((window.reduce((acc, val) => acc + val.h2, 0) / window.length).toFixed(2)),
+      nh3: Number((window.reduce((acc, val) => acc + val.nh3, 0) / window.length).toFixed(2)),
+    }
+  })
+
+  // Report Generation Function (CSV)
+  const handleGenerateReport = () => {
+    if (!chartData || chartData.length === 0) {
+      alert("No data available to generate a report.")
+      return
+    }
+
+    const headers = ["Timestamp", "Stream Type", "CO (PPM)", "LPG (PPM)", "H2 (PPM)", "NH3 (PPM)"]
+    const preRows = chartData.map(d => [d.time, "Pre-Filtration", d.co, d.lpg, d.h2, d.nh3])
+    const postRows = postChartData.map(d => [d.time, "Post-Filtration", d.co, d.lpg, d.h2, d.nh3])
+
+    const csvContent = [headers.join(","), ...preRows.map(r => r.join(",")), ...postRows.map(r => r.join(","))].join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    link.href = url
+    link.setAttribute("download", `${myDevice.id}_Monthly_Report_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -159,9 +239,22 @@ const Dashboard = ({ forceDeviceId }) => {
                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-lg animate-pulse font-bold">Live Data</span>
             ) : null}
           </h1>
-          <p className="text-slate-500 mt-1">
-            Monitoring Device: <span className="font-mono font-bold text-blue-600">{myDevice.id}</span>
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-slate-500">Monitoring Device:</span> 
+            {(!forceDeviceId && (currentUser?.role === 'Admin' || currentUser?.role === 'admin')) ? (
+              <select 
+                className="font-mono font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1 outline-none cursor-pointer"
+                value={myDevice?.id}
+                onChange={(e) => setLocalDeviceId(e.target.value)}
+              >
+                {devices.map(d => (
+                  <option key={d.id} value={d.id}>{d.id}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="font-mono font-bold text-blue-600">{myDevice.id}</span>
+            )}
+          </div>
           <div className="mt-2">
             <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-md border border-slate-200">
               Last Received: {readings.timestamp ? new Date(readings.timestamp).toLocaleString() : "No Data Yet"}
@@ -259,45 +352,114 @@ const Dashboard = ({ forceDeviceId }) => {
         </div>
       </div>
 
-      {/* Historical Chart & Reports */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mt-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Activity className="text-blue-500" size={20} />
-            Historical Gas Levels (Pre-Filtration)
-          </h3>
+      {/* Advanced Analytics Settings Header */}
+      <div className="mt-12 bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute -right-12 -top-12 opacity-5 scale-150 rotate-12 pointer-events-none">
+          <Activity size={240} />
+        </div>
+        <div className="z-10 relative">
+          <h2 className="text-xl font-black text-slate-800 flex items-center gap-3 tracking-tight">
+             <div className="bg-blue-100 text-blue-600 p-2 rounded-xl border border-blue-200 shadow-inner">
+               <Activity size={24} />
+             </div>
+             Advanced Purification Analytics
+          </h2>
+          <p className="text-sm font-medium text-slate-500 mt-2 max-w-lg">
+             Compare dynamic pre-filtration intakes against purified exhaust outputs using native historical smoothing algorithms.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 z-10 w-full xl:w-auto">
+          <div className="flex gap-1.5 bg-slate-100 p-1.5 rounded-xl flex-wrap w-full sm:w-auto shadow-inner border border-slate-200/50">
+            {["1h", "24h", "7d", "1m", "3m", "1y"].map(tf => (
+              <button 
+                key={tf}
+                onClick={() => setTimeFilter(tf)}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all border border-transparent flex-1 sm:flex-none ${timeFilter === tf ? 'bg-white text-blue-700 shadow border-slate-200/80 scale-105' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
+              >
+                {tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
           <button 
-             className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-xl font-bold transition-colors text-sm"
-             onClick={() => alert(`Report generating for ${myDevice.id}...`)}
+             className="flex items-center justify-center w-full sm:w-auto gap-2 bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-md shadow-blue-500/20 px-5 py-2.5 flex-shrink-0 rounded-xl font-bold transition-all hover:-translate-y-[1px] text-sm"
+             onClick={handleGenerateReport}
           >
-            <FileText size={16} />
-            Generate Monthly Report
+            <FileText size={18} />
+            Export Data
           </button>
         </div>
+      </div>
+
+      {/* Side-by-Side Dual Synchronized Performance Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
         
-        {chartData.length > 0 ? (
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="time" stroke="#94a3b8" fontSize={12} tickMargin={10} axisLine={false} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} axisLine={false} tickLine={false} tickMargin={10} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                />
-                <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                <Line type="monotone" dataKey="co" name="CO" stroke="#64748b" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="lpg" name="LPG" stroke="#f97316" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="h2" name="H2" stroke="#a855f7" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
-                <Line type="monotone" dataKey="nh3" name="NH3" stroke="#84cc16" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+        {/* Pre-Filtration Chart */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 relative group transition-all hover:shadow-md">
+          <div className="absolute top-0 right-0 bg-rose-50 text-rose-500 font-bold text-xs uppercase tracking-widest px-4 py-1.5 rounded-bl-2xl border-b border-l border-rose-100 shadow-sm z-10 transition-colors group-hover:bg-rose-100">
+            Polluted Intake Stream
           </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center text-slate-400 italic bg-slate-50 rounded-xl">
-             Insufficient data to generate historical chart
+          <h3 className="text-base font-bold text-slate-700 flex items-center gap-2 mb-6">
+            <Wind size={18} className="text-slate-400" />
+            Raw Environmental Levels
+          </h3>
+          
+          {chartData.length > 0 ? (
+            <div className="h-80 w-full ml-[-15px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickMargin={12} axisLine={false} tickLine={false} minTickGap={40} />
+                  <YAxis stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} tickMargin={10} width={40} />
+                  <Tooltip contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", padding: "12px" }} itemStyle={{ fontWeight: "bold" }} labelStyle={{ color: "#64748b", marginBottom: "8px", fontWeight: "bold", fontSize: "12px" }} />
+                  <Legend wrapperStyle={{ paddingTop: "20px", fontSize: "12px", fontWeight: "bold" }} iconType="circle" />
+                  <Line type="basis" dataKey="co" name="CO" stroke="#64748b" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="basis" dataKey="lpg" name="LPG" stroke="#f97316" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="basis" dataKey="h2" name="H2" stroke="#a855f7" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="basis" dataKey="nh3" name="NH3" stroke="#84cc16" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-80 flex flex-col items-center justify-center text-slate-400 italic bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+               <Activity size={32} className="mb-3 text-slate-300" />
+               No raw intake data available
+            </div>
+          )}
+        </div>
+
+        {/* Post-Filtration Chart */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 relative group transition-all hover:shadow-md">
+          <div className="absolute top-0 right-0 bg-emerald-50 text-emerald-600 font-bold text-xs uppercase tracking-widest px-4 py-1.5 rounded-bl-2xl border-b border-l border-emerald-100 shadow-sm z-10 transition-colors group-hover:bg-emerald-100">
+            Purified Output Stream
           </div>
-        )}
+          <h3 className="text-base font-bold text-slate-700 flex items-center gap-2 mb-6">
+            <Sparkles size={18} className="text-emerald-500" />
+            Filtered Supply Analytics
+          </h3>
+          
+          {postChartData.length > 0 ? (
+            <div className="h-80 w-full ml-[-15px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={postChartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickMargin={12} axisLine={false} tickLine={false} minTickGap={40} />
+                  <YAxis stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} tickMargin={10} width={40} />
+                  <Tooltip contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", padding: "12px" }} itemStyle={{ fontWeight: "bold" }} labelStyle={{ color: "#64748b", marginBottom: "8px", fontWeight: "bold", fontSize: "12px" }} />
+                  <Legend wrapperStyle={{ paddingTop: "20px", fontSize: "12px", fontWeight: "bold" }} iconType="circle" />
+                  <Line type="basis" dataKey="co" name="CO" stroke="#64748b" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="basis" dataKey="lpg" name="LPG" stroke="#f97316" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="basis" dataKey="h2" name="H2" stroke="#a855f7" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="basis" dataKey="nh3" name="NH3" stroke="#84cc16" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-80 flex flex-col items-center justify-center text-slate-400 italic bg-emerald-50/30 rounded-2xl border-2 border-dashed border-emerald-100">
+               <Sparkles size={32} className="mb-3 text-emerald-200" />
+               No clean output data available
+            </div>
+          )}
+        </div>
       </div>
 
 

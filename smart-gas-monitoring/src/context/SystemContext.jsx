@@ -78,8 +78,8 @@ export const SystemProvider = ({ children }) => {
     )
     unsubscribers.push(devicesUnsub)
 
-    // Sensor readings listener (last 100 readings)
-    const readingsQuery = query(collection(db, "sensorReadings"), orderBy("timestamp", "desc"), limit(100))
+    // Sensor readings listener (last 2000 readings to support wider time intervals)
+    const readingsQuery = query(collection(db, "sensorReadings"), orderBy("timestamp", "desc"), limit(2000))
     const readingsUnsub = onSnapshot(
       readingsQuery,
       (snapshot) => {
@@ -186,24 +186,16 @@ export const SystemProvider = ({ children }) => {
 
   const registerDevice = async (deviceData) => {
     try {
-      const response = await fetch("http://localhost:5000/api/devices", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          deviceId: deviceData.id || deviceData.deviceId,
-          assignedUser: deviceData.assignedUser || deviceData.assignedTo || null
-        }),
+      const deviceId = deviceData.id || deviceData.deviceId
+      await setDoc(doc(db, "devices", deviceId), {
+        assignedUser: deviceData.assignedUser || deviceData.assignedTo || null,
+        status: "Online",
+        lastUpdated: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to register over API")
-      }
-
-      await addLog("Device Registered", `Device ${deviceData.id || deviceData.deviceId} added`, "Success")
-      console.log("[v0] Device registered:", deviceData.id)
+      await addLog("Device Registered", `Device ${deviceId} added`, "Success")
+      console.log("[v0] Device registered:", deviceId)
       return { success: true }
     } catch (error) {
       console.error("[v0] Register device error:", error)

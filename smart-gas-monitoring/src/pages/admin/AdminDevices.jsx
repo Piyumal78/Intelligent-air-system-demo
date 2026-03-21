@@ -5,7 +5,7 @@ import { Server, Plus } from "lucide-react"
 import { useSystem } from "../../context/SystemContext"
 
 const AdminDevices = () => {
-  const { devices, registerDevice } = useSystem()
+  const { devices, registerDevice, deleteDevice, updateDeviceStatus } = useSystem()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [newDevice, setNewDevice] = useState({ id: "", assignedUser: null })
   const [isRegistering, setIsRegistering] = useState(false)
@@ -71,11 +71,21 @@ const AdminDevices = () => {
             </div>
 
             <div className="flex gap-2 mt-4">
-              <button className="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-medium hover:bg-slate-100 text-xs">
-                Edit Config
+              <button 
+                onClick={() => updateDeviceStatus(device.id, device.status === "Online" ? "Offline" : "Online")}
+                className="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-medium hover:bg-slate-100 text-xs"
+              >
+                {device.status === "Online" ? "Set Offline" : "Set Online"}
               </button>
-              <button className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 text-xs">
-                Deactivate
+              <button 
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to delete this device?")) {
+                    deleteDevice(device.id)
+                  }
+                }}
+                className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 text-xs"
+              >
+                Delete
               </button>
             </div>
           </div>
