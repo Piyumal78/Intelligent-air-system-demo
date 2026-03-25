@@ -153,7 +153,7 @@ const Dashboard = ({ forceDeviceId }) => {
     })
     .reverse()
     .map((r) => ({
-      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
       co: r.CO || 0,
       lpg: r.LPG || 0,
       h2: r.H2 || 0,
@@ -187,7 +187,7 @@ const Dashboard = ({ forceDeviceId }) => {
     })
     .reverse()
     .map((r) => ({
-      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
       co: r.CO || 0,
       lpg: r.LPG || 0,
       h2: r.H2 || 0,
