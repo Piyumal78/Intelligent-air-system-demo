@@ -20,7 +20,7 @@ const TopNav = () => {
             </div>
 
             <div className="flex items-center gap-6">
-                <Link to="/alerts" className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer hover:bg-slate-50 rounded-full">
+                <Link to="/dashboard/alerts" className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer hover:bg-slate-50 rounded-full">
                     <Bell size={22} />
                     {activeAlerts.length > 0 && (
                         <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white flex items-center justify-center text-[10px] font-bold rounded-full border border-white shadow-sm animate-pulse">

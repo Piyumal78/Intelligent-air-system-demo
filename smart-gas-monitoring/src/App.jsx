@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Alerts from './pages/Alerts';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -18,7 +19,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   }
 
   if (adminOnly && currentUser.role !== 'admin' && currentUser.role !== 'Admin') {
-    return <Navigate to="/" />;
+    return <Navigate to="/dashboard" />;
   }
 
   return children;
@@ -30,9 +31,10 @@ function App() {
       <SystemProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
 
-            <Route path="/" element={
+            <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
@@ -45,6 +47,9 @@ function App() {
               } />
               <Route path="alerts" element={<Alerts />} />
             </Route>
+
+            {/* Fallback route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </SystemProvider>

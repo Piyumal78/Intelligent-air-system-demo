@@ -50,9 +50,9 @@ const AdminDevices = () => {
                 <Server size={24} />
               </div>
               <span
-                className={`px-2 py-1 text-xs font-bold rounded-full ${device.status === "Online" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                className={`px-2 py-1 text-xs font-bold rounded-full ${device.status?.toLowerCase() === "online" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
               >
-                {device.status}
+                {device.status?.toLowerCase() === "online" ? "Online" : "Offline"}
               </span>
             </div>
             <h3 className="font-bold text-lg text-slate-800">{device.id}</h3>
@@ -72,10 +72,10 @@ const AdminDevices = () => {
 
             <div className="flex gap-2 mt-4">
               <button 
-                onClick={() => updateDeviceStatus(device.id, device.status === "Online" ? "Offline" : "Online")}
+                onClick={() => updateDeviceStatus(device.id, device.status?.toLowerCase() === "online" ? "Offline" : "Online")}
                 className="flex-1 py-2 rounded-lg bg-slate-50 text-slate-600 font-medium hover:bg-slate-100 text-xs"
               >
-                {device.status === "Online" ? "Set Offline" : "Set Online"}
+                {device.status?.toLowerCase() === "online" ? "Set Offline" : "Set Online"}
               </button>
               <button 
                 onClick={() => {

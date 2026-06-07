@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSystem } from '../../context/SystemContext';
 import Dashboard from '../Dashboard';
 import { Monitor } from 'lucide-react';
@@ -6,13 +6,6 @@ import { Monitor } from 'lucide-react';
 const AdminMonitor = () => {
     const { devices } = useSystem();
     const [selectedDevice, setSelectedDevice] = useState("");
-
-    // Set initial device when devices load
-    useEffect(() => {
-        if (devices.length > 0 && !selectedDevice) {
-            setSelectedDevice(devices[0].id);
-        }
-    }, [devices, selectedDevice]);
 
     if (devices.length === 0) {
         return (
@@ -22,6 +15,8 @@ const AdminMonitor = () => {
             </div>
         );
     }
+
+    const activeDevice = selectedDevice || (devices.length > 0 ? devices[0].id : "");
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -37,12 +32,12 @@ const AdminMonitor = () => {
                 <div className="w-full md:w-auto">
                     <select
                         className="w-full md:w-64 border border-slate-200 p-3 text-sm font-bold text-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer bg-slate-50 hover:bg-white transition-colors shadow-sm"
-                        value={selectedDevice}
+                        value={activeDevice}
                         onChange={(e) => setSelectedDevice(e.target.value)}
                     >
                         {devices.map((device) => (
                             <option key={device.id} value={device.id}>
-                                {device.id} {device.status === 'online' ? '(🟢 Online)' : '(🔴 Offline)'}
+                                {device.id} {device.status?.toLowerCase() === 'online' ? '(🟢 Online)' : '(🔴 Offline)'}
                             </option>
                         ))}
                     </select>
@@ -52,11 +47,11 @@ const AdminMonitor = () => {
             {/* Injected Dashboard */}
             <div className="bg-slate-50/50 p-2 md:p-8 rounded-3xl border-2 border-slate-200/60 shadow-inner relative min-h-[500px]">
                 <div className="absolute top-4 right-6 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs rounded-full shadow-md z-10 hidden md:block">
-                    {selectedDevice} - Admin Override Active
+                    {activeDevice} - Admin Override Active
                 </div>
-                {selectedDevice ? (
+                {activeDevice ? (
                     <div className="scale-[0.98] origin-top">
-                        <Dashboard forceDeviceId={selectedDevice} />
+                        <Dashboard forceDeviceId={activeDevice} />
                     </div>
                 ) : (
                     <div className="h-64 flex items-center justify-center text-slate-400 font-medium">Loading monitor...</div>

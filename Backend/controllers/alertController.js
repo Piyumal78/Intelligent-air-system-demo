@@ -1,5 +1,4 @@
-const { db } = require("../config/firebase-config")
-const admin = require("firebase-admin")
+const { db, admin } = require("../config/firebase-config")
 
 const checkThresholds = async (deviceId, readings) => {
   const THRESHOLDS = {
@@ -30,18 +29,25 @@ const checkThresholds = async (deviceId, readings) => {
 
   if (alerts.length === 0) return
 
-  const recentAlerts = await db
+  const allAlerts = await db
     .collection("alerts")
     .where("deviceId", "==", deviceId)
-    .where("timestamp", ">", new Date(Date.now() - 60000)) // Last 1 minute
     .get()
+
+  const oneMinuteAgo = Date.now() - 60000
+  const recentAlertsDocs = allAlerts.docs.filter((doc) => {
+    const ts = doc.data().timestamp
+    if (!ts) return false
+    const timeMs = typeof ts.toMillis === "function" ? ts.toMillis() : new Date(ts).getTime()
+    return timeMs > oneMinuteAgo
+  })
 
   const batch = db.batch()
   const alertsRef = db.collection("alerts")
 
   for (const alert of alerts) {
     // Skip if similar alert exists in last minute
-    const hasSimilar = recentAlerts.docs.some(
+    const hasSimilar = recentAlertsDocs.some(
       (doc) => doc.data().gasType === alert.gasType && doc.data().level === alert.level,
     )
 

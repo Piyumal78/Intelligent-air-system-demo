@@ -12,7 +12,6 @@ import {
   query,
   orderBy,
   setDoc,
-  serverTimestamp,
   limit,
 } from "firebase/firestore"
 import { createUserWithEmailAndPassword } from "firebase/auth"
@@ -34,8 +33,8 @@ export const SystemProvider = ({ children }) => {
 
   useEffect(() => {
     if (!currentUser) {
-      setLoading(false)
-      return
+      const timer = setTimeout(() => setLoading(false), 0)
+      return () => clearTimeout(timer)
     }
 
     console.log("[v0] Setting up Firestore listeners")
@@ -133,7 +132,7 @@ export const SystemProvider = ({ children }) => {
       unsubscribers.push(logsUnsub)
     }
 
-    setLoading(false)
+    setTimeout(() => setLoading(false), 0)
 
     // Cleanup all listeners
     return () => {

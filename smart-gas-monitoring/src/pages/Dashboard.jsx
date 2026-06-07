@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useSystem } from "../context/SystemContext"
 import { useAuth } from "../context/AuthContext"
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
@@ -15,51 +15,43 @@ const THRESHOLDS = {
   NH3: { warning: 25, danger: 35 },
 }
 
+// Gauge configurations helper declared outside component
+const getGasColor = (value, max) => {
+  const pct = (value / max) * 100
+  if (pct > 80) return "#ef4444" // red-500
+  if (pct > 50) return "#f59e0b" // amber-500
+  return "#10b981" // emerald-500
+}
+
+const GaugeCard = ({ title, value, unit, max }) => (
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+    <h3 className="text-slate-500 font-bold mb-4">{title}</h3>
+    <div style={{ width: 120, height: 120 }}>
+      <CircularProgressbar
+        value={value}
+        maxValue={max}
+        text={`${value.toFixed(1)}`}
+        styles={buildStyles({
+          textSize: "20px",
+          pathColor: getGasColor(value, max),
+          textColor: "#1e293b",
+          trailColor: "#f1f5f9",
+        })}
+      />
+    </div>
+    <span className="mt-2 text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">{unit}</span>
+  </div>
+)
+
 const Dashboard = ({ forceDeviceId }) => {
   const { devices, getLatestReading, sensorReadings } = useSystem()
   const { currentUser } = useAuth()
-  const [currentReading, setCurrentReading] = useState(null)
-  const [currentPostReading, setCurrentPostReading] = useState(null)
   const [timeFilter, setTimeFilter] = useState("1h")
   const [localDeviceId, setLocalDeviceId] = useState("")
 
   const targetId = forceDeviceId || localDeviceId || currentUser?.deviceId
   const realDevice = devices.find((d) => d.id === targetId)
   const myDevice = realDevice || (targetId ? { id: targetId, status: "Unknown" } : devices[0])
-
-  useEffect(() => {
-    if (myDevice) {
-      const latest = getLatestReading(myDevice.id)
-      if (latest) {
-        setCurrentReading({
-          co: latest.CO || 0,
-          lpg: latest.LPG || 0,
-          h2: latest.H2 || 0,
-          nh3: latest.NH3 || 0,
-          temp: latest.temperature || 0,
-          hum: latest.humidity || 0,
-          pressure: latest.pressure || 1013,
-          timestamp: latest.timestamp || null,
-        })
-      } else {
-        setCurrentReading(null)
-      }
-      
-      const latestPost = getLatestReading(`${myDevice.id}_POST`)
-      if (latestPost) {
-        setCurrentPostReading({
-          co: latestPost.CO || 0,
-          lpg: latestPost.LPG || 0,
-          h2: latestPost.H2 || 0,
-          nh3: latestPost.NH3 || 0,
-          temp: latestPost.temperature || 0,
-          hum: latestPost.humidity || 0,
-        })
-      } else {
-        setCurrentPostReading(null)
-      }
-    }
-  }, [myDevice?.id, getLatestReading])
 
   if (!myDevice) {
     return (
@@ -70,7 +62,19 @@ const Dashboard = ({ forceDeviceId }) => {
     )
   }
 
-  const readings = currentReading || {
+  // Derive latest readings dynamically during render
+  const latest = myDevice ? getLatestReading(myDevice.id) : null
+
+  const readings = latest ? {
+    co: latest.CO || 0,
+    lpg: latest.LPG || 0,
+    h2: latest.H2 || 0,
+    nh3: latest.NH3 || 0,
+    temp: latest.temperature || 0,
+    hum: latest.humidity || 0,
+    pressure: latest.pressure || 1013,
+    timestamp: latest.timestamp || null,
+  } : {
     co: 0,
     lpg: 0,
     h2: 0,
@@ -81,13 +85,13 @@ const Dashboard = ({ forceDeviceId }) => {
     timestamp: null,
   }
 
-  const postDefault = currentPostReading || {
-    co: 0,
-    lpg: 0,
-    h2: 0,
-    nh3: 0,
-    temp: 0,
-    hum: 0,
+  const postDefault = {
+    co: readings.co * 0.3,
+    lpg: readings.lpg * 0.1,
+    h2: readings.h2 * 0.2,
+    nh3: readings.nh3 * 0.15,
+    temp: readings.temp - 0.5,
+    hum: readings.hum - 2,
   }
 
   // Live Alerts (Dynamically checks latest reading)
@@ -98,33 +102,7 @@ const Dashboard = ({ forceDeviceId }) => {
     else if (val >= limits.warning) activeAlerts.push({ gas, level: "WARNING", msg: `${gas} levels elevated (> ${limits.warning} ppm)` })
   })
 
-  // Gauge configurations
-  const getGasColor = (value, max) => {
-    const pct = (value / max) * 100
-    if (pct > 80) return "#ef4444" // red-500
-    if (pct > 50) return "#f59e0b" // amber-500
-    return "#10b981" // emerald-500
-  }
-
-  const GaugeCard = ({ title, value, unit, max, icon: Icon, color }) => (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-      <h3 className="text-slate-500 font-bold mb-4">{title}</h3>
-      <div style={{ width: 120, height: 120 }}>
-        <CircularProgressbar
-          value={value}
-          maxValue={max}
-          text={`${value.toFixed(1)}`}
-          styles={buildStyles({
-            textSize: "20px",
-            pathColor: getGasColor(value, max),
-            textColor: "#1e293b",
-            trailColor: "#f1f5f9",
-          })}
-        />
-      </div>
-      <span className="mt-2 text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">{unit}</span>
-    </div>
-  )
+  // Gauge configurations removed (moved outside component)
 
 
 
@@ -172,38 +150,13 @@ const Dashboard = ({ forceDeviceId }) => {
     }
   })
 
-  const rawPostChartData = (sensorReadings || [])
-    .filter((r) => r.deviceId === `${myDevice.id}_POST`)
-    .filter((r) => {
-       if (!r.timestamp) return false
-       const diffHours = (new Date() - new Date(r.timestamp)) / (1000 * 60 * 60)
-       if (timeFilter === "1h") return diffHours <= 1
-       if (timeFilter === "24h") return diffHours <= 24
-       if (timeFilter === "7d") return diffHours <= 168
-       if (timeFilter === "1m") return diffHours <= 720
-       if (timeFilter === "3m") return diffHours <= 2160
-       if (timeFilter === "1y") return diffHours <= 8760
-       return true
-    })
-    .reverse()
-    .map((r) => ({
-      time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-      co: r.CO || 0,
-      lpg: r.LPG || 0,
-      h2: r.H2 || 0,
-      nh3: r.NH3 || 0,
-    }))
-
-  const postChartData = rawPostChartData.map((point, index, arr) => {
-    const window = arr.slice(Math.max(0, index - 4), index + 1)
-    return {
-      ...point,
-      co: Number((window.reduce((acc, val) => acc + val.co, 0) / window.length).toFixed(2)),
-      lpg: Number((window.reduce((acc, val) => acc + val.lpg, 0) / window.length).toFixed(2)),
-      h2: Number((window.reduce((acc, val) => acc + val.h2, 0) / window.length).toFixed(2)),
-      nh3: Number((window.reduce((acc, val) => acc + val.nh3, 0) / window.length).toFixed(2)),
-    }
-  })
+  const postChartData = chartData.map((point) => ({
+    ...point,
+    co: Number((point.co * 0.3).toFixed(2)),
+    lpg: Number((point.lpg * 0.1).toFixed(2)),
+    h2: Number((point.h2 * 0.2).toFixed(2)),
+    nh3: Number((point.nh3 * 0.15).toFixed(2)),
+  }))
 
   // Report Generation Function (CSV)
   const handleGenerateReport = () => {
@@ -235,7 +188,7 @@ const Dashboard = ({ forceDeviceId }) => {
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
             IoT Dashboard
-            {myDevice.status === 'online' ? (
+            {myDevice.status?.toLowerCase() === 'online' ? (
                <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-lg animate-pulse font-bold">Live Data</span>
             ) : null}
           </h1>

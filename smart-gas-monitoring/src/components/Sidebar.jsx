@@ -8,9 +8,9 @@ const Sidebar = () => {
     const { logout, currentUser } = useAuth();
 
     const menuItems = [
-        { title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
-        { title: 'Admin Panel', icon: <Users size={20} />, path: '/admin', adminOnly: true },
-        { title: 'Alerts', icon: <AlertTriangle size={20} />, path: '/alerts' },
+        { title: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
+        { title: 'Admin Panel', icon: <Users size={20} />, path: '/dashboard/admin', adminOnly: true },
+        { title: 'Alerts', icon: <AlertTriangle size={20} />, path: '/dashboard/alerts' },
         // { title: 'Settings', icon: <Settings size={20} />, path: '/settings' },
     ];
 

@@ -5,7 +5,7 @@ import { useSystem } from '../../context/SystemContext';
 const AdminOverview = () => {
     const { users, devices, alerts } = useSystem();
 
-    const activeDevices = devices.filter(d => d.status === 'Online').length;
+    const activeDevices = devices.filter(d => d.status?.toLowerCase() === 'online').length;
     const criticalAlerts = alerts.filter(a => a.status === 'Danger').length;
 
     const stats = [

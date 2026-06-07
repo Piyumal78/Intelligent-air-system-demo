@@ -1,9 +1,7 @@
 const express = require("express")
 const router = express.Router()
-const { db } = require("../config/firebase-config")
+const { db, admin } = require("../config/firebase-config")
 const { checkThresholds } = require("../controllers/alertController")
-
-const admin = require("firebase-admin")
 
 // Object to store timeout references for each device
 const deviceTimeouts = {}
