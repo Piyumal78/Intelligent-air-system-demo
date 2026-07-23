@@ -12,23 +12,21 @@ A comprehensive real-time air quality and gas monitoring system built with React
 - **Device Management**: Register and manage multiple IoT devices
 - **Activity Logs**: Complete audit trail of system events
 
-## Tech Stack
+## System Architecture Flow
 
-### Frontend
-- React 18 with Vite
-- Firebase Authentication & Firestore
-- Tailwind CSS for styling
-- React Router for navigation
-- React Circular Progressbar for visualizations
+```
+1. ESP32 Hardware Sensors  ────(Real-Time Data Ingestion)────► Firebase Firestore
+                                                                      │
+2. React Frontend Web App ◄───(Real-Time Firestore Listeners)─────────┤
+   (Live Dashboard)                                                   │
+                                                                      ▼
+3. Node.js Backend ───────(Analytical Processing & Alerts)─────► Node.js / Firebase API
+```
 
-### Backend (Optional)
-- Node.js + Express
-- Firebase Admin SDK
-- REST API for device data ingestion
-
-### Database
-- Firebase Firestore (NoSQL real-time database)
-- Collections: users, devices, sensorReadings, alerts, logs
+- **ESP32 (Hardware Sensors)**: Sends raw and filtered gas readings (`CO`, `LPG`, `H2`, `NH3`, `CO_post`, etc.) directly to Firebase Firestore.
+- **Firebase Firestore**: Central real-time database holding `sensorReadings`, `devices`, `alerts`, and `logs`.
+- **React Frontend**: Connects directly to Firestore via real-time listeners (`onSnapshot`) to instantly display live gas levels and trigger UI alerts.
+- **Node.js Backend**: Handles deeper data analysis, device registry management, threshold alerting, and background task processing when required.
 
 ## Getting Started
 
