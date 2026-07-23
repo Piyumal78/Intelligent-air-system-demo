@@ -264,6 +264,12 @@ export const SystemProvider = ({ children }) => {
         LPG: readings.LPG || 0,
         H2: readings.H2 || 0,
         NH3: readings.NH3 || 0,
+        CO_post: readings.CO_post ?? readings.co_post ?? 0,
+        LPG_post: readings.LPG_post ?? readings.lpg_post ?? 0,
+        H2_post: readings.H2_post ?? readings.h2_post ?? 0,
+        NH3_post: readings.NH3_post ?? readings.nh3_post ?? 0,
+        temperature_post: readings.temperature_post ?? readings.temp_post ?? (readings.temperature || 0),
+        humidity_post: readings.humidity_post ?? readings.hum_post ?? (readings.humidity || 0),
         timestamp: new Date().toISOString(),
       })
 

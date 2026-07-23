@@ -45,7 +45,10 @@ router.post("/", async (req, res) => {
 
 router.post("/:deviceId/readings", async (req, res) => {
   const { deviceId } = req.params
-  const { temperature, humidity, pressure, CO, LPG, H2, NH3 } = req.body
+  const {
+    temperature, humidity, pressure, CO, LPG, H2, NH3,
+    CO_post, LPG_post, H2_post, NH3_post, temperature_post, humidity_post
+  } = req.body
 
   try {
     // 1. Add sensor reading to sensorReadings collection
@@ -58,6 +61,12 @@ router.post("/:deviceId/readings", async (req, res) => {
       LPG: LPG || 0,
       H2: H2 || 0,
       NH3: NH3 || 0,
+      CO_post: CO_post ?? req.body.co_post ?? 0,
+      LPG_post: LPG_post ?? req.body.lpg_post ?? 0,
+      H2_post: H2_post ?? req.body.h2_post ?? 0,
+      NH3_post: NH3_post ?? req.body.nh3_post ?? 0,
+      temperature_post: temperature_post ?? req.body.temp_post ?? (temperature || 0),
+      humidity_post: humidity_post ?? req.body.hum_post ?? (humidity || 0),
       timestamp: req.body.timestamp || new Date().toISOString(),
     })
 

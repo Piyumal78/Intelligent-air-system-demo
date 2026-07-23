@@ -85,16 +85,6 @@ const Dashboard = ({ forceDeviceId }) => {
     timestamp: null,
   }
 
-  const postDefault = {
-    co: readings.co * 0.3,
-    lpg: readings.lpg * 0.1,
-    h2: readings.h2 * 0.2,
-    nh3: readings.nh3 * 0.15,
-    temp: readings.temp - 0.5,
-    hum: readings.hum - 2,
-  }
-
-  // Live Alerts (Dynamically checks latest reading)
   const activeAlerts = []
   Object.entries(THRESHOLDS).forEach(([gas, limits]) => {
     const val = readings[gas.toLowerCase()]
@@ -102,17 +92,13 @@ const Dashboard = ({ forceDeviceId }) => {
     else if (val >= limits.warning) activeAlerts.push({ gas, level: "WARNING", msg: `${gas} levels elevated (> ${limits.warning} ppm)` })
   })
 
-  // Gauge configurations removed (moved outside component)
-
-
-
   const postReadings = {
-    co: Number(postDefault.co).toFixed(2),
-    lpg: Number(postDefault.lpg).toFixed(2),
-    h2: Number(postDefault.h2).toFixed(2),
-    nh3: Number(postDefault.nh3).toFixed(1),
-    temp: Number(postDefault.temp).toFixed(1),
-    hum: Number(postDefault.hum).toFixed(0),
+    co: Number(latest?.CO_post ?? latest?.co_post ?? 0).toFixed(2),
+    lpg: Number(latest?.LPG_post ?? latest?.lpg_post ?? 0).toFixed(2),
+    h2: Number(latest?.H2_post ?? latest?.h2_post ?? 0).toFixed(2),
+    nh3: Number(latest?.NH3_post ?? latest?.nh3_post ?? 0).toFixed(1),
+    temp: Number(latest?.temperature_post ?? latest?.temp_post ?? readings.temp).toFixed(1),
+    hum: Number(latest?.humidity_post ?? latest?.hum_post ?? readings.hum).toFixed(0),
   }
 
   // Filter and smooth chart data
@@ -136,6 +122,10 @@ const Dashboard = ({ forceDeviceId }) => {
       lpg: r.LPG || 0,
       h2: r.H2 || 0,
       nh3: r.NH3 || 0,
+      co_post: r.CO_post ?? r.co_post ?? 0,
+      lpg_post: r.LPG_post ?? r.lpg_post ?? 0,
+      h2_post: r.H2_post ?? r.h2_post ?? 0,
+      nh3_post: r.NH3_post ?? r.nh3_post ?? 0,
     }))
 
   // Noise Reduction: Moving Average Smoothing (Window: 5 points)
@@ -150,13 +140,16 @@ const Dashboard = ({ forceDeviceId }) => {
     }
   })
 
-  const postChartData = chartData.map((point) => ({
-    ...point,
-    co: Number((point.co * 0.3).toFixed(2)),
-    lpg: Number((point.lpg * 0.1).toFixed(2)),
-    h2: Number((point.h2 * 0.2).toFixed(2)),
-    nh3: Number((point.nh3 * 0.15).toFixed(2)),
-  }))
+  const postChartData = rawChartData.map((point, index, arr) => {
+    const window = arr.slice(Math.max(0, index - 4), index + 1)
+    return {
+      ...point,
+      co: Number((window.reduce((acc, val) => acc + val.co_post, 0) / window.length).toFixed(2)),
+      lpg: Number((window.reduce((acc, val) => acc + val.lpg_post, 0) / window.length).toFixed(2)),
+      h2: Number((window.reduce((acc, val) => acc + val.h2_post, 0) / window.length).toFixed(2)),
+      nh3: Number((window.reduce((acc, val) => acc + val.nh3_post, 0) / window.length).toFixed(2)),
+    }
+  })
 
   // Report Generation Function (CSV)
   const handleGenerateReport = () => {

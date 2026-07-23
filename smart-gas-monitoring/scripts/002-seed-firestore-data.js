@@ -95,6 +95,10 @@ async function seedData() {
         LPG: 45,
         H2: 3,
         NH3: 2,
+        CO_post: 3.5,
+        LPG_post: 40.5,
+        H2_post: 2.4,
+        NH3_post: 1.7,
         timestamp: new Date().toISOString(),
       },
       {
@@ -106,6 +110,10 @@ async function seedData() {
         LPG: 120,
         H2: 8,
         NH3: 4,
+        CO_post: 8.4,
+        LPG_post: 108,
+        H2_post: 6.4,
+        NH3_post: 3.4,
         timestamp: new Date().toISOString(),
       },
     ]

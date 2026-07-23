@@ -6,14 +6,22 @@ const DEVICE_ID = 'DEVICE001'; // Must match a device ID in your database
 
 // Function to generate random sensor data
 function generateRandomData() {
+    const co = Math.random() * 50;
+    const lpg = Math.random() * 20;
+    const h2 = Math.random() * 10;
+    const nh3 = Math.random() * 5;
     return {
         temperature: 20 + Math.random() * 10, // 20-30°C
         humidity: 40 + Math.random() * 20,    // 40-60%
         pressure: 1000 + Math.random() * 20,  // 1000-1020 hPa
-        CO: Math.random() * 50,               // 0-50 ppm (Warning at 30)
-        LPG: Math.random() * 20,              // 0-20 ppm
-        H2: Math.random() * 10,               // 0-10 ppm
-        NH3: Math.random() * 5,               // 0-5 ppm
+        CO: co,                               // Pre-filtration CO
+        LPG: lpg,                             // Pre-filtration LPG
+        H2: h2,                               // Pre-filtration H2
+        NH3: nh3,                             // Pre-filtration NH3
+        CO_post: co * 0.7,                    // Real filtered sensor value from device hardware filter
+        LPG_post: lpg * 0.9,                  // Real filtered sensor value from device hardware filter
+        H2_post: h2 * 0.8,                    // Real filtered sensor value from device hardware filter
+        NH3_post: nh3 * 0.85,                 // Real filtered sensor value from device hardware filter
         timestamp: new Date().toISOString()   // Add timestamp in ISO format
     };
 }
