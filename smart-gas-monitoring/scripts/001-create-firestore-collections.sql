@@ -1,0 +1,54 @@
+-- Firestore Collections Structure for AirPurify System
+-- This is a reference document. Firestore collections are created automatically.
+-- Use Firebase Console or the backend scripts to initialize these collections.
+
+-- Collection: users
+-- Document ID: Firebase Auth UID
+-- Fields:
+--   - username: string
+--   - email: string
+--   - deviceId: string (device assigned to user)
+--   - role: string ('admin' | 'user')
+--   - createdAt: timestamp
+
+-- Collection: devices
+-- Document ID: Device ID (e.g., DEVICE001)
+-- Fields:
+--   - status: string ('online' | 'offline')
+--   - location: string
+--   - assignedUser: string (user UID)
+--   - lastUpdated: timestamp
+--   - createdAt: timestamp
+
+-- Collection: sensorReadings
+-- Document ID: auto-generated
+-- Fields:
+--   - deviceId: string
+--   - temperature: number (Celsius)
+--   - humidity: number (percentage)
+--   - pressure: number (hPa)
+--   - CO: number (PPM)
+--   - LPG: number (PPM)
+--   - H2: number (PPM)
+--   - NH3: number (PPM)
+--   - timestamp: timestamp
+
+-- Collection: alerts
+-- Document ID: auto-generated
+-- Fields:
+--   - deviceId: string
+--   - gasType: string ('CO' | 'LPG' | 'H2' | 'NH3')
+--   - value: number
+--   - level: string ('Good' | 'Warning' | 'Danger')
+--   - message: string
+--   - timestamp: timestamp
+--   - status: string ('new' | 'dismissed')
+
+-- Collection: logs
+-- Document ID: auto-generated
+-- Fields:
+--   - action: string
+--   - detail: string
+--   - type: string ('Info' | 'Warning' | 'Error' | 'Success')
+--   - userId: string
+--   - timestamp: timestamp
