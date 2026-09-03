@@ -67,9 +67,9 @@ const Dashboard = ({ forceDeviceId }) => {
   const [localDeviceId, setLocalDeviceId] = useState("")
   const [now, setNow] = useState(() => Date.now())
 
-  // Periodically refresh data freshness check every 5 seconds
+  // Periodically refresh data freshness check every 1 second
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 5000)
+    const interval = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -114,9 +114,9 @@ const Dashboard = ({ forceDeviceId }) => {
   const formattedLastTime = lastDateObj ? lastDateObj.toLocaleTimeString() : ""
   const formattedDateTime = lastDateObj ? `${formattedLastDate} ${formattedLastTime}` : "No Data in Firebase"
 
-  // Data is considered "Live" ONLY if a new reading arrived in Firebase within the last 60 seconds
+  // Data is considered "Live" ONLY if a new reading arrived in Firebase within the last 15 seconds
   const diffMs = lastDateObj ? now - lastDateObj.getTime() : null
-  const isRecentData = diffMs !== null && diffMs >= -30000 && diffMs < 60000
+  const isRecentData = diffMs !== null && diffMs >= -5000 && diffMs < 15000
 
   const activeAlerts = []
   Object.entries(THRESHOLDS).forEach(([gas, limits]) => {
@@ -218,15 +218,16 @@ const Dashboard = ({ forceDeviceId }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-            IoT Dashboard
+            AirSense IoT Dashboard
             {isRecentData ? (
-               <span className="px-2.5 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-lg animate-pulse font-bold flex items-center gap-1.5 border border-emerald-200">
-                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                 Live Data
+               <span className="px-3 py-1 text-xs bg-emerald-100 text-emerald-800 rounded-lg animate-pulse font-bold flex items-center gap-1.5 border border-emerald-200 shadow-sm">
+                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                 LIVE DATA
                </span>
             ) : (
-               <span className="px-2.5 py-1 text-xs bg-slate-100 text-slate-500 rounded-lg font-semibold border border-slate-200">
-                 {latest ? "Offline (No Recent Feed)" : "No Firebase Data"}
+               <span className="px-3 py-1 text-xs bg-rose-100 text-rose-700 rounded-lg font-bold flex items-center gap-1.5 border border-rose-200 shadow-sm">
+                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                 OFFLINE (No Recent Feed)
                </span>
             )}
           </h1>
@@ -279,13 +280,15 @@ const Dashboard = ({ forceDeviceId }) => {
             <p className="text-xs text-slate-400 font-medium">Real-time raw environmental intake reading from Firebase</p>
           </div>
           {lastDateObj ? (
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border w-fit flex items-center gap-2 shadow-sm ${
+            <span className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border w-fit flex items-center gap-2 shadow-sm ${
               isRecentData 
                 ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                : "bg-slate-50 text-slate-600 border-slate-200"
+                : "bg-rose-50 text-rose-700 border-rose-200"
             }`}>
-              <span className={`w-2.5 h-2.5 rounded-full ${isRecentData ? "bg-emerald-500 animate-ping" : "bg-slate-400"}`}></span>
-              {isRecentData ? "Live Feed Active" : "Last Recorded"}: <span className="font-mono font-extrabold">{formattedLastDate} {formattedLastTime}</span>
+              <span className={`w-2.5 h-2.5 rounded-full ${isRecentData ? "bg-emerald-500 animate-ping" : "bg-rose-500"}`}></span>
+              <span>{isRecentData ? "LIVE FEED ACTIVE" : "OFFLINE"}</span>
+              <span className="text-slate-300">|</span>
+              <span>Last Data Received: <strong className="font-mono text-slate-900">{formattedLastDate} {formattedLastTime}</strong></span>
             </span>
           ) : (
             <span className="text-xs font-bold bg-amber-50 text-amber-700 px-3 py-1.5 rounded-xl border border-amber-200 w-fit flex items-center gap-1.5">
@@ -345,13 +348,15 @@ const Dashboard = ({ forceDeviceId }) => {
             <p className="text-xs text-slate-400 font-medium">Clean air exhaust output after filtration</p>
           </div>
           {lastDateObj ? (
-            <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border w-fit flex items-center gap-2 shadow-sm ${
+            <span className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border w-fit flex items-center gap-2 shadow-sm ${
               isRecentData 
                 ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
-                : "bg-slate-50 text-slate-600 border-slate-200"
+                : "bg-rose-50 text-rose-700 border-rose-200"
             }`}>
-              <span className={`w-2.5 h-2.5 rounded-full ${isRecentData ? "bg-indigo-500 animate-ping" : "bg-slate-400"}`}></span>
-              {isRecentData ? "Live Feed Active" : "Last Recorded"}: <span className="font-mono font-extrabold">{formattedLastDate} {formattedLastTime}</span>
+              <span className={`w-2.5 h-2.5 rounded-full ${isRecentData ? "bg-indigo-500 animate-ping" : "bg-rose-500"}`}></span>
+              <span>{isRecentData ? "LIVE FEED ACTIVE" : "OFFLINE"}</span>
+              <span className="text-slate-300">|</span>
+              <span>Last Data Received: <strong className="font-mono text-slate-900">{formattedLastDate} {formattedLastTime}</strong></span>
             </span>
           ) : (
             <span className="text-xs font-bold bg-amber-50 text-amber-700 px-3 py-1.5 rounded-xl border border-amber-200 w-fit flex items-center gap-1.5">

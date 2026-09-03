@@ -45,8 +45,8 @@ const Login = () => {
         {/* Left Side - Form */}
         <div className="w-full md:w-1/2 p-12 flex flex-col justify-center relative">
           <div className="mb-10">
-            <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Welcome Back!</h1>
-            <p className="text-slate-500">Sign in to access the {isAdmin ? "Admin Portal" : "Smart Monitor"}</p>
+            <h1 className="text-3xl font-extrabold text-slate-800 mb-2">AirSense Portal</h1>
+            <p className="text-slate-500">Sign in to access the {isAdmin ? "AirSense Admin Portal" : "AirSense Dashboard"}</p>
           </div>
 
           <div className="flex gap-4 mb-8 bg-slate-100 p-1.5 rounded-xl">
